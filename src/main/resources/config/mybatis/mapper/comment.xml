@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="c">
+
+	<!-- step 조회 -->
+	<select id="maxStepSelect" parameterType="int"
+		resultType="String">
+		SELECT STEP FROM (SELECT c.*,RANK() OVER(ORDER BY c.STEP
+		DESC,c.C_IDX) AS "RANK" FROM "COMMENT" c WHERE "REF" = #{b_idx})WHERE
+		"RANK" = 1
+	</select>
+
+	<!-- 댓글 등록 -->
+	<insert id="commentInsert" parameterType="vo.CommentVO">
+		INSERT INTO "COMMENT"
+		VALUES(SEQ_COMMENT.NEXTVAL,#{u_idx},#{content},#{ref},#{step},#{depth},SYSDATE,0)
+	</insert>
+
+	<!-- 댓글 조회 -->
+	<select id="commentSelectList" parameterType="int"
+		resultType="vo.CommentVO">
+		SELECT * FROM (SELECT c.*,u.U_NICKNAME,RANK() OVER(ORDER BY
+		c.STEP
+		ASC,c."DEPTH" ASC) AS "RANK" FROM "COMMENT" c LEFT JOIN USERINFO
+		u ON
+		c.U_IDX = u.U_IDX WHERE "REF" = #{b_idx}) ORDER BY "RANK" ASC
+	</select>
+
+	<!-- depth 최대값 조회 -->
+	<select id="selectMaxDepth" parameterType="vo.CommentVO"
+		resultType="int">
+		SELECT "DEPTH" FROM (SELECT c.*,RANK() OVER(ORDER BY
+		c."DEPTH" DESC) AS
+		"RANK" FROM "COMMENT" c WHERE "REF" = #{ref} AND
+		STEP = #{step}) WHERE
+		"RANK" = 1
+	</select>
+
+	<!-- 대댓글 등록 -->
+	<insert id="commentInCommentInsert" parameterType="vo.CommentVO">
+		INSERT INTO
+		"COMMENT"
+		VALUES(SEQ_COMMENT.NEXTVAL,#{u_idx},#{content},#{ref},#{step},#{depth},SYSDATE,0)
+	</insert>
+
+	<!-- 댓글 수정-->
+	<update id="commentUpdate" parameterType="vo.CommentVO">
+		UPDATE "COMMENT" SET CONTENT = #{content} WHERE C_IDX = ${c_idx}
+	</update>
+	
+	<!--  댓글 삭제 -->
+	<update id="commentDelete" parameterType="int">
+		UPDATE "COMMENT" SET DELINFO = 1 WHERE C_IDX = #{c_idx}
+	</update>
+	
+	<!-- 댓글 1개 조회 -->
+	<select id="commentSelectOne" parameterType="int" resultType="vo.CommentVO">
+		SELECT * FROM "COMMENT" WHERE C_IDX = #{c_idx}
+	</select>
+</mapper>

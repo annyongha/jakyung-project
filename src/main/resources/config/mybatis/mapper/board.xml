@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="b">
+	<!-- 공지글 전체 조회 -->
+	<select id="noticeSelectList" resultType="vo.BoardVO">
+		SELECT B1.*,RANK()
+		OVER(ORDER BY B1.B_IDX DESC) AS "RANK" FROM (SELECT * FROM (SELECT
+		B.*, U.U_NICKNAME,U.U_TYPE FROM BOARD B LEFT JOIN USERINFO U ON
+		B.U_IDX = U.U_IDX) WHERE POINT = 0)B1
+	</select>
+
+	<!-- 일반글 조회 -->
+	<select id="nomalSelectList" resultType="vo.BoardVO"
+		parameterType="java.util.HashMap">
+		SELECT B2.* FROM (SELECT B1.*,RANK() OVER(ORDER BY
+		B1.B_IDX DESC) AS "RANK"
+		FROM
+		(SELECT * FROM (SELECT B.*,
+		U.U_NICKNAME,U.U_TYPE FROM BOARD B
+		LEFT JOIN USERINFO U ON B.U_IDX =
+		U.U_IDX) WHERE POINT = 1)B1) B2
+		WHERE "RANK" BETWEEN #{minData} AND
+		#{maxData}
+	</select>
+
+	<select id="boardCommentCount" parameterType="int"
+		resultType="int">
+		SELECT COUNT(*) FROM "COMMENT" c WHERE "REF" = #{b_idx}
+	</select>
+
+	<!-- 파일첨부 후 게시글 등록 -->
+	<insert id="boardInsert" parameterType="vo.BoardVO">
+		INSERT INTO BOARD
+		VALUES(SEQ_BOARD.NEXTVAL,
+		#{u_idx},
+		#{point},
+		#{title},
+		#{content},
+		#{filename},
+		SYSDATE,
+		0,
+		0,
+		0)
+	</insert>
+
+	<!-- 파일 등록 없이 게시글 등록 -->
+	<insert id="noFileBoardInsert" parameterType="vo.BoardVO">
+		INSERT INTO BOARD
+		VALUES(SEQ_BOARD.NEXTVAL,
+		#{u_idx},
+		#{point},
+		#{title},
+		#{content},
+		null,
+		SYSDATE,
+		0,
+		0,
+		0)
+	</insert>
+
+	<!-- 일반게시물 전체 개수 조회 -->
+	<select id="totalPagingCount" resultType="int">
+		SELECT COUNT(*) FROM
+		BOARD WHERE POINT = 1
+	</select>
+
+	<!-- 게시물 상세보기 페이지 데이터 조회 -->
+	<select id="selectOne" parameterType="int"
+		resultType="vo.BoardVO">
+		SELECT b.*,u.U_NICKNAME,u.U_TYPE FROM BOARD b LEFT JOIN
+		USERINFO u
+		ON b.U_IDX = u.U_IDX WHERE B_IDX = #{b_idx}
+	</select>
+
+	<!-- 게시물 삭제 -->
+	<update id="boardDelete" parameterType="int">
+		UPDATE BOARD SET DELINFO
+		= 1 WHERE B_IDX = #{b_idx}
+	</update>
+
+	<!-- 게시물 조회수 증가 -->
+	<update id="boardUpReadHit">
+		UPDATE BOARD SET "SELECT" = "SELECT" +1 WHERE B_IDX =
+		#{b_idx}
+	</update>
+
+	<!--업로드 파일 등록 후 게시글 수정 -->
+	<update id="boardUpdate" parameterType="vo.BoardVO">
+		UPDATE BOARD SET TITLE =
+		#{title}, CONTENT = #{content}, FILENAME = #{filename} WHERE B_IDX =
+		#{b_idx}
+	</update>
+
+	<!--업로드 없이 게시글 수정 -->
+	<update id="noFileBoardUpdate" parameterType="vo.BoardVO">
+		UPDATE BOARD SET
+		TITLE = #{title}, CONTENT = #{content}, FILENAME = null WHERE B_IDX =
+		#{b_idx}
+	</update>
+
+	<!-- idx 기준으로 전체게시물 개수 조회 -->
+	<select id="idxPagingCount" parameterType="int" resultType="int">
+		SELECT COUNT(*) FROM BOARD WHERE B_IDX = #{b_idx} AND POINT = 1
+	</select>
+
+	<!-- 제목 기준으로 전체게시물 개수 조회 -->
+	<select id="titlePagingCount" parameterType="String"
+		resultType="int">
+		SELECT COUNT(*) FROM BOARD WHERE TITLE LIKE #{title} AND
+		POINT = 1
+	</select>
+
+	<!-- 작성자 기준으로 전체게시물 개수 조회 -->
+	<select id="writterPagingCount" parameterType="String"
+		resultType="int">
+		SELECT COUNT(*) FROM BOARD b LEFT JOIN USERINFO u ON
+		b.U_IDX = u.U_IDX WHERE
+		u.U_NICKNAME LIKE #{writter} AND b.POINT = 1
+	</select>
+
+	<!-- idx로 검색했을때 전체게시물 조회 -->
+	<select id="idxNomalSelectList" parameterType="HashMap"
+		resultType="vo.BoardVO">
+		SELECT B2.* FROM (SELECT B1.*,RANK() OVER(ORDER BY B1.B_IDX
+		DESC) AS "RANK"
+		FROM (SELECT * FROM (SELECT B.*, U.U_NICKNAME,U.U_TYPE
+		FROM BOARD B
+		LEFT JOIN USERINFO U ON B.U_IDX = U.U_IDX) WHERE POINT = 1
+		AND B_IDX =
+		#{b_idx})B1) B2 WHERE "RANK" BETWEEN #{minData} AND
+		#{maxData}
+	</select>
+
+	<!-- idx로 검색했을때 전체게시물 조회 -->
+	<select id="titleNomalSelectList" parameterType="HashMap"
+		resultType="vo.BoardVO">
+		SELECT * FROM (SELECT B2.*,RANK() OVER(ORDER BY B2.B_IDX
+		DESC) AS "RANK" FROM
+		(SELECT B.*, U.U_NICKNAME,U.U_TYPE FROM BOARD B LEFT JOIN USERINFO U ON
+		B.U_IDX = U.U_IDX) B2 WHERE POINT = 1 AND TITLE LIKE #{title})
+		WHERE "RANK" BETWEEN #{minData} AND #{maxData}
+	</select>
+
+	<!-- idx로 검색했을때 전체게시물 조회 -->
+	<select id="writterNomalSelectList" parameterType="HashMap"
+		resultType="vo.BoardVO">
+		SELECT * FROM (SELECT B2.*,RANK() OVER(ORDER BY B2.B_IDX DESC) AS "RANK"
+		FROM
+		(SELECT B.*, U.U_NICKNAME,U.U_TYPE FROM BOARD B LEFT JOIN USERINFO U ON
+		B.U_IDX = U.U_IDX) B2 WHERE POINT = 1 AND U_NICKNAME LIKE #{writter})
+		WHERE "RANK" BETWEEN #{minData} AND #{maxData}
+	</select>
+</mapper>
